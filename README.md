@@ -10,8 +10,9 @@
 # LOTUS GAMEBOY EMULATOR
 
 ![Image](https://i.gyazo.com/b42c2eb3120b571aa9924884d0a6b9d5.png)
-3d model by PubuduDharmasena17 (from CGTrader)
-The game on Screen is Pokeom Red (USA) from Nintendo. I own the originals of all the games I tried.
+
+* 3d model by PubuduDharmasena17 (from CGTrader)
+* The game on Screen is Pokemon Red (USA) from Nintendo. I own the originals of all the games I tried.
 
 ## About
 
@@ -19,6 +20,10 @@ Lotus Gameboy Emulator is a personal project Gameboy Emulator made just for fun 
 
 I made it over a long weekend in which I challenged my self to be able to load Pokemon, Zelda and Tetris and listen their fantastic songs.
 I managed to do it, so I'm happy now! 
+
+It's not the first emulator I make, although I always only make them load some games then abandon them. The only difference this time is that I'm publishing the code.
+
+
 
 ## LCD Shaders
 
