@@ -1,0 +1,93 @@
+#pragma kernel Initialize
+#pragma kernel SetPixelsColor
+#pragma kernel GhostingPass
+
+static int SCREEN_WIDTH = 160;
+static int SCREEN_HEIGHT = 144;
+static int TOTAL_PIXELS = SCREEN_WIDTH * SCREEN_HEIGHT;
+     
+
+// 4 colors
+StructuredBuffer<float4> Palette;
+
+// current state of pixel colors in the ppu
+StructuredBuffer<int> PPUColors;
+
+RWStructuredBuffer<float4> PrevScreen0;
+RWStructuredBuffer<float4> PrevScreen1;
+RWStructuredBuffer<float4> PrevScreen2;
+RWStructuredBuffer<float4> PrevScreen3;
+RWStructuredBuffer<float4> PrevScreen4;
+RWStructuredBuffer<float4> PrevScreen5;
+RWStructuredBuffer<float4> PrevScreen6;
+
+RWTexture2D<float4> FinalTexture;
+
+[numthreads(1,1,1)]
+void Initialize (uint3 id : SV_DispatchThreadID)
+{
+    int pixelIndex = id.x;
+
+    PrevScreen0[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen1[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen2[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen3[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen4[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen5[pixelIndex] = float4(0, 0, 0, 1);
+    PrevScreen6[pixelIndex] = float4(0, 0, 0, 1);
+}
+
+
+[numthreads(8,8,1)]
+void SetPixelsColor (uint3 id : SV_DispatchThreadID)
+{
+    int pixelIndex = id.y * SCREEN_WIDTH +  id.x;
+    
+    FinalTexture[id.xy] = Palette[PPUColors[pixelIndex]];
+}
+
+
+[numthreads(8,8,1)]
+void GhostingPass (uint3 id : SV_DispatchThreadID)
+{
+    int pixelIndex = id.y * SCREEN_WIDTH +  id.x;
+    
+    //motion blur
+    float response_time = 0.33;
+    float4 input_rgb = FinalTexture[id.xy];
+    input_rgb += (PrevScreen0[pixelIndex] - input_rgb) * response_time;
+    input_rgb += (PrevScreen1[pixelIndex] - input_rgb) * pow(response_time, 2.0);
+    input_rgb += (PrevScreen2[pixelIndex] - input_rgb) * pow(response_time, 3.0);
+    input_rgb += (PrevScreen3[pixelIndex] - input_rgb) * pow(response_time, 4.0);
+    input_rgb += (PrevScreen4[pixelIndex] - input_rgb) * pow(response_time, 5.0);
+    input_rgb += (PrevScreen5[pixelIndex] - input_rgb) * pow(response_time, 6.0);
+    input_rgb += (PrevScreen6[pixelIndex] - input_rgb) * pow(response_time, 7.0);
+
+    float4 out_color = input_rgb;
+
+    float lineSpacing = 1.5;
+    // Determine if this pixel is on a line
+    float lineAlpha = 0.5; 
+    float isOnLineY =
+        fmod(id.y, lineSpacing) < lineAlpha ? 1  : 0.9;
+    float isOnLineX =
+        fmod(id.x, lineSpacing) < lineAlpha ? 1  : 0.9;
+    
+    // Apply line effect
+    float multiplier = max(0.9, (isOnLineX * isOnLineY));
+    out_color *= multiplier; // This will darken pixels on lines if isOnLine is 0 for non-line pixels and 1 for line pixels
+
+   
+    // out_color = FinalTexture[id.xy];
+    
+    // output
+    FinalTexture[id.xy] = out_color;
+
+    PrevScreen6[pixelIndex] = PrevScreen5[pixelIndex];
+    PrevScreen5[pixelIndex] = PrevScreen4[pixelIndex];
+    PrevScreen4[pixelIndex] = PrevScreen3[pixelIndex];
+    PrevScreen3[pixelIndex] = PrevScreen2[pixelIndex];
+    PrevScreen2[pixelIndex] = PrevScreen1[pixelIndex];
+    PrevScreen1[pixelIndex] = PrevScreen0[pixelIndex];
+    PrevScreen0[pixelIndex] = input_rgb;        
+}
